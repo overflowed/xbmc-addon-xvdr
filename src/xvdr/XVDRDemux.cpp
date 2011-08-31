@@ -316,7 +316,7 @@ void cXVDRDemux::StreamChange(cResponsePacket *resp)
       m_Streams.stream[m_Streams.iStreamCount].iFPSRate    = resp->extract_U32();
       m_Streams.stream[m_Streams.iStreamCount].iHeight     = resp->extract_U32();
       m_Streams.stream[m_Streams.iStreamCount].iWidth      = resp->extract_U32();
-      m_Streams.stream[m_Streams.iStreamCount].fAspect     = resp->extract_Double();
+      m_Streams.stream[m_Streams.iStreamCount].fAspect     = (double)resp->extract_S32()/1000.0;
       m_Streams.stream[m_Streams.iStreamCount].strLanguage[0]= 0;
       m_Streams.stream[m_Streams.iStreamCount].strLanguage[1]= 0;
       m_Streams.stream[m_Streams.iStreamCount].strLanguage[2]= 0;
@@ -334,7 +334,7 @@ void cXVDRDemux::StreamChange(cResponsePacket *resp)
       m_Streams.stream[m_Streams.iStreamCount].iFPSRate    = resp->extract_U32();
       m_Streams.stream[m_Streams.iStreamCount].iHeight     = resp->extract_U32();
       m_Streams.stream[m_Streams.iStreamCount].iWidth      = resp->extract_U32();
-      m_Streams.stream[m_Streams.iStreamCount].fAspect     = resp->extract_Double();
+      m_Streams.stream[m_Streams.iStreamCount].fAspect     = (double)resp->extract_S32()/1000.0;
       m_Streams.stream[m_Streams.iStreamCount].strLanguage[0]= 0;
       m_Streams.stream[m_Streams.iStreamCount].strLanguage[1]= 0;
       m_Streams.stream[m_Streams.iStreamCount].strLanguage[2]= 0;
@@ -466,7 +466,7 @@ bool cXVDRDemux::StreamContentInfo(cResponsePacket *resp)
         m_Streams.stream[i].iFPSRate          = resp->extract_U32();
         m_Streams.stream[i].iHeight           = resp->extract_U32();
         m_Streams.stream[i].iWidth            = resp->extract_U32();
-        m_Streams.stream[i].fAspect           = resp->extract_Double();
+        m_Streams.stream[i].fAspect           = (double)resp->extract_S32()/1000.0;
       }
       else if (m_Streams.stream[i].iCodecType == AVMEDIA_TYPE_SUBTITLE)
       {

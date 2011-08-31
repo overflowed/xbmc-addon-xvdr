@@ -56,7 +56,6 @@ class cResponsePacket
     uint64_t  extract_U64();
     int32_t   extract_S32();
     int64_t   extract_S64();
-    double    extract_Double();
 
     bool      end();
 
