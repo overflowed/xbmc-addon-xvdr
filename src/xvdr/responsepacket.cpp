@@ -132,16 +132,6 @@ uint64_t cResponsePacket::extract_U64()
   return ull;
 }
 
-double cResponsePacket::extract_Double()
-{
-  if ((packetPos + sizeof(uint64_t)) > userDataLength) return 0;
-  uint64_t ull = ntohll(*(uint64_t*)&userData[packetPos]);
-  double d;
-  memcpy(&d,&ull,sizeof(double));
-  packetPos += sizeof(uint64_t);
-  return d;
-}
-
 int32_t cResponsePacket::extract_S32()
 {
   if ((packetPos + sizeof(int32_t)) > userDataLength) return 0;
