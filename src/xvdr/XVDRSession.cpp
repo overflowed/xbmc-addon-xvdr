@@ -177,8 +177,8 @@ cResponsePacket* cXVDRSession::ReadMessage()
     opCodeID = ntohl(m_streamPacketHeader.opCodeID);
     streamID = ntohl(m_streamPacketHeader.streamID);
     duration = ntohl(m_streamPacketHeader.duration);
-    pts = ntohll(*(int64_t*)m_streamPacketHeader.pts);
-    dts = ntohll(*(int64_t*)m_streamPacketHeader.dts);
+    pts = ntohl(m_streamPacketHeader.pts);
+    dts = ntohl(m_streamPacketHeader.dts);
     userDataLength = ntohl(m_streamPacketHeader.userDataLength);
 
     if(opCodeID == XVDR_STREAM_MUXPKT) {
