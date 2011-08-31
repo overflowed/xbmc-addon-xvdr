@@ -83,9 +83,9 @@ private:
   struct {
         uint32_t opCodeID;
         uint32_t streamID;
+        int64_t pts;
+        int64_t dts;
         uint32_t duration;
-        uint8_t pts[sizeof(int64_t)];
-        uint8_t dts[sizeof(int64_t)];
         uint32_t userDataLength;
   } m_streamPacketHeader;
 
