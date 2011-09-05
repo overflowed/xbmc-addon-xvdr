@@ -42,6 +42,9 @@ public:
   virtual void      Close();
   virtual void      Abort();
 
+  void              SetTimeout(int timeout_ms);
+  void              SetCompression(int level);
+
   cResponsePacket*  ReadMessage();
   bool              SendMessage(cRequestPacket* vrp);
 
@@ -54,10 +57,22 @@ public:
 
 protected:
 
+  typedef enum {
+    XVDR_NOTICE,
+    XVDR_ERROR,
+    XVDR_DEBUG
+  } XVDR_LEVEL;
+
+  virtual void Log(XVDR_LEVEL, ...);
+  virtual void Notification(XVDR_LEVEL, ...);
+
   void SleepMs(int ms);
 
   bool TryReconnect();
   bool IsOpen() { return m_fd != INVALID_SOCKET; }
+
+  virtual void* AllocatePacket(uint8_t** pBuffer, int length);
+  virtual void FreePacket(void* packet);
 
   virtual void OnDisconnect();
   virtual void OnReconnect();
@@ -68,6 +83,8 @@ protected:
   std::string     m_hostname;
   int             m_port;
   std::string     m_name;
+  int             m_timeout; // timeout in ms (2000ms default)
+  int             m_compression; // compression level (6 default)
 
 private:
 

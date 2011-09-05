@@ -41,5 +41,6 @@ addons/Makefile
 addons/pvr.vdr.xvdr/Makefile
 src/Makefile
 src/libTcpSocket/Makefile
+src/libxvdr/Makefile
 src/xvdr/Makefile
 ])

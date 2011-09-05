@@ -21,8 +21,8 @@
  */
 
 #include "XVDRSession.h"
-#include "client.h"
 
+#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -43,6 +43,8 @@ cXVDRSession::cXVDRSession()
   : m_fd(INVALID_SOCKET)
   , m_protocol(0)
   , m_connectionLost(false)
+  , m_timeout(2000)
+  , m_compression(6)
 {
 }
 
@@ -70,11 +72,11 @@ bool cXVDRSession::Open(const std::string& hostname, int port, const char *name)
   Close();
 
   char errbuf[128];
-  m_fd = tcp_connect(hostname.c_str(), port, errbuf, sizeof(errbuf), g_iConnectTimeout * 1000);
+  m_fd = tcp_connect(hostname.c_str(), port, errbuf, sizeof(errbuf), m_timeout);
 
   if (m_fd == INVALID_SOCKET)
   {
-    XBMC->Log(LOG_ERROR, "%s - Can't connect to VSNI Server: %s", __FUNCTION__, errbuf);
+    Log(XVDR_ERROR, "%s - Can't connect to VSNI Server: %s", __FUNCTION__, errbuf);
     return false;
   }
 
@@ -96,7 +98,7 @@ bool cXVDRSession::Login()
     if (!vrp.init(XVDR_LOGIN))                  throw "Can't init cRequestPacket";
     if (!vrp.add_U32(XVDRPROTOCOLVERSION))      throw "Can't add protocol version to RequestPacket";
 #ifdef HAVE_ZLIB
-    if (!vrp.add_U8(g_iCompression))            throw "Can't add compression parameter";
+    if (!vrp.add_U8(m_compression))             throw "Can't add compression parameter";
 #else
     if (!vrp.add_U8(0))                         throw "Can't add compression parameter";
 #endif
@@ -125,8 +127,7 @@ bool cXVDRSession::Login()
     m_protocol  = protocol;
 
     if (m_name.empty())
-      XBMC->Log(LOG_NOTICE, "Logged in at '%lu+%i' to '%s' Version: '%s' with protocol version '%lu'",
-        vdrTime, vdrTimeOffset, ServerName, ServerVersion, protocol);
+      Log(XVDR_NOTICE, "Logged in at '%lu+%i' to '%s' Version: '%s' with protocol version '%lu'", vdrTime, vdrTimeOffset, ServerName, ServerVersion, protocol);
 
     delete[] ServerName;
     delete[] ServerVersion;
@@ -135,7 +136,7 @@ bool cXVDRSession::Login()
   }
   catch (const char * str)
   {
-    XBMC->Log(LOG_ERROR, "%s - %s", __FUNCTION__,str);
+    Log(XVDR_ERROR, "%s - %s", __FUNCTION__,str);
     tcp_close(m_fd);
     m_fd = INVALID_SOCKET;
     return false;
@@ -182,14 +183,16 @@ cResponsePacket* cXVDRSession::ReadMessage()
     userDataLength = ntohl(m_streamPacketHeader.userDataLength);
 
     if(opCodeID == XVDR_STREAM_MUXPKT) {
-      DemuxPacket* p = PVR->AllocateDemuxPacket(userDataLength);
+      //DemuxPacket* p = PVR->AllocateDemuxPacket(userDataLength);
+      uint8_t* pData = NULL;
+      void* p = AllocatePacket(&pData, userDataLength);
       userData = (uint8_t*)p;
       if (userDataLength > 0)
       {
         if (!userData) return NULL;
-        if (!readData(p->pData, userDataLength))
+        if (!readData(pData, userDataLength))
         {
-          PVR->FreeDemuxPacket(p);
+          FreePacket(p);
           return NULL;
         }
       }
@@ -281,7 +284,7 @@ bool cXVDRSession::ReadSuccess(cRequestPacket* vrp)
 
   if(retCode != XVDR_RET_OK)
   {
-    XBMC->Log(LOG_ERROR, "%s - failed with error code '%i'", __FUNCTION__, retCode);
+    Log(XVDR_ERROR, "%s - failed with error code '%i'", __FUNCTION__, retCode);
     return false;
   }
   return true;
@@ -300,7 +303,7 @@ bool cXVDRSession::TryReconnect() {
   if(!Login())
     return false;
 
-  XBMC->Log(LOG_DEBUG, "%s - reconnected", __FUNCTION__);
+  Log(XVDR_DEBUG, "%s - reconnected", __FUNCTION__);
   m_connectionLost = false;
 
   OnReconnect();
@@ -313,7 +316,7 @@ void cXVDRSession::SignalConnectionLost()
   if(m_connectionLost)
     return;
 
-  XBMC->Log(LOG_ERROR, "%s - connection lost !!!", __FUNCTION__);
+  Log(XVDR_ERROR, "%s - connection lost !!!", __FUNCTION__);
 
   m_connectionLost = true;
   Abort();
@@ -324,7 +327,7 @@ void cXVDRSession::SignalConnectionLost()
 
 bool cXVDRSession::readData(uint8_t* buffer, int totalBytes)
 {
-  return (tcp_read_timeout(m_fd, buffer, totalBytes, g_iConnectTimeout * 1000) == 0);
+  return (tcp_read_timeout(m_fd, buffer, totalBytes, m_timeout) == 0);
 }
 
 void cXVDRSession::SleepMs(int ms)
@@ -334,4 +337,31 @@ void cXVDRSession::SleepMs(int ms)
 #else
   usleep(ms * 1000);
 #endif
+}
+
+void cXVDRSession::Log(cXVDRSession::XVDR_LEVEL, ...)
+{
+}
+
+void cXVDRSession::Notification(cXVDRSession::XVDR_LEVEL, ...)
+{
+}
+
+void* cXVDRSession::AllocatePacket(uint8_t** pdata, int datalength)
+{
+  return NULL;
+}
+
+void cXVDRSession::FreePacket(void* packet)
+{
+}
+
+void cXVDRSession::SetTimeout(int timeout_ms)
+{
+  m_timeout = timeout_ms;
+}
+
+void cXVDRSession::SetCompression(int level)
+{
+  m_compression = level;
 }
