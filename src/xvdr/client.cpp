@@ -225,6 +225,23 @@ unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
   return 0;
 }
 
+static bool XVDR_Reconnect()
+{
+  // reconnect if compression parameter changed
+  if (XVDRData == NULL)
+    return false;
+
+  XVDRData->Close();
+  if (!XVDRData->Open(g_szHostname, DEFAULT_PORT))
+    return false;
+
+  if (!XVDRData->Login())
+    return false;
+
+  if (!XVDRData->EnableStatusInterface(g_bHandleMessages))
+    return false;
+}
+
 ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
 {
   string str = settingName;
@@ -243,8 +260,9 @@ ADDON_STATUS ADDON_SetSetting(const char *settingName, const void *settingValue)
     int old_value = g_iCompression;
     g_iCompression = (*(int*) settingValue) * 3;
 
-    if (old_value != g_iCompression)
-      return ADDON_STATUS_NEED_RESTART;
+    // reconnect if compression parameter changed
+    if ((old_value != g_iCompression) && !XVDR_Reconnect())
+      return ADDON_STATUS_LOST_CONNECTION;
   }
   else if (str == "priority")
   {
