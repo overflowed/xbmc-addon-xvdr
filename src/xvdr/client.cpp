@@ -517,6 +517,7 @@ void CloseLiveStream(void)
 {
   if (XVDRDemuxer)
   {
+    XVDRDemuxer->Abort();
     XVDRDemuxer->Close();
     delete XVDRDemuxer;
     XVDRDemuxer = NULL;
@@ -567,6 +568,7 @@ bool SwitchChannel(const PVR_CHANNEL &channel)
   if (!XVDRDemuxer)
     return PVR_ERROR_SERVER_ERROR;
 
+  XVDRDemuxer->Abort();
   XVDRDemuxer->Close();
   return XVDRDemuxer->OpenChannel(channel);
 }
