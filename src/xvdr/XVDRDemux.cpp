@@ -47,7 +47,19 @@ bool cXVDRDemux::OpenChannel(const PVR_CHANNEL &channelinfo)
   if(!cXVDRSession::Login())
     return false;
 
-  return SwitchChannel(m_channelinfo);
+  XBMC->Log(LOG_DEBUG, "changing to channel %d", channelinfo.iChannelNumber);
+
+  cRequestPacket vrp;
+  if (!vrp.init(XVDR_CHANNELSTREAM_OPEN) || !vrp.add_U32(channelinfo.iUniqueId) || !ReadSuccess(&vrp))
+  {
+    XBMC->Log(LOG_ERROR, "%s - failed to set channel", __FUNCTION__);
+    return false;
+  }
+
+  m_channelinfo = channelinfo;
+  m_Streams.iStreamCount  = 0;
+
+  return !ConnectionLost();
 }
 
 bool cXVDRDemux::GetStreamProperties(PVR_STREAM_PROPERTIES* props)
@@ -157,23 +169,6 @@ DemuxPacket* cXVDRDemux::Read()
 
   delete resp;
   return PVR->AllocateDemuxPacket(0);
-}
-
-bool cXVDRDemux::SwitchChannel(const PVR_CHANNEL &channelinfo)
-{
-  XBMC->Log(LOG_DEBUG, "changing to channel %d", channelinfo.iChannelNumber);
-
-  cRequestPacket vrp;
-  if (!vrp.init(XVDR_CHANNELSTREAM_OPEN) || !vrp.add_U32(channelinfo.iUniqueId) || !ReadSuccess(&vrp))
-  {
-    XBMC->Log(LOG_ERROR, "%s - failed to set channel", __FUNCTION__);
-    return false;
-  }
-
-  m_channelinfo = channelinfo;
-  m_Streams.iStreamCount  = 0;
-
-  return !ConnectionLost();
 }
 
 bool cXVDRDemux::GetSignalStatus(PVR_SIGNAL_STATUS &qualityinfo)
@@ -412,7 +407,7 @@ void cXVDRDemux::StreamStatus(cResponsePacket *resp)
       break;
     case XVDR_STREAM_STATUS_SIGNALRESTORED:
       XBMC->QueueNotification(QUEUE_INFO, "TV Signal restored");
-      SwitchChannel(m_channelinfo);
+      OpenChannel(m_channelinfo);
       break;
     default:
       break;
@@ -490,5 +485,5 @@ bool cXVDRDemux::StreamContentInfo(cResponsePacket *resp)
 
 void cXVDRDemux::OnReconnect()
 {
-  SwitchChannel(m_channelinfo);
+  OpenChannel(m_channelinfo);
 }

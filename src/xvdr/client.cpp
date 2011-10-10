@@ -564,10 +564,11 @@ int GetCurrentClientChannel(void)
 
 bool SwitchChannel(const PVR_CHANNEL &channel)
 {
-  if (XVDRDemuxer)
-    return XVDRDemuxer->SwitchChannel(channel);
+  if (!XVDRDemuxer)
+    return PVR_ERROR_SERVER_ERROR;
 
-  return false;
+  XVDRDemuxer->Close();
+  return XVDRDemuxer->OpenChannel(channel);
 }
 
 PVR_ERROR SignalStatus(PVR_SIGNAL_STATUS &signalStatus)

@@ -48,7 +48,6 @@ public:
   void Abort();
   bool GetStreamProperties(PVR_STREAM_PROPERTIES* props);
   DemuxPacket* Read();
-  bool SwitchChannel(const PVR_CHANNEL &channelinfo);
   int CurrentChannel() { return m_channelinfo.iChannelNumber; }
   bool GetSignalStatus(PVR_SIGNAL_STATUS &qualityinfo);
 
