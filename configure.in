@@ -36,7 +36,6 @@ fi
 
 AC_SUBST(VERSIONEXT)
 
-
 # Finally create all the generated files
 AC_OUTPUT([
 Makefile
