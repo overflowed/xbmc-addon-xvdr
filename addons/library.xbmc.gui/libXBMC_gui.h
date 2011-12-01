@@ -41,7 +41,7 @@ typedef void* GUIHANDLE;
 #else
 #define GUI_HELPER_DLL "/library.xbmc.gui/libXBMC_gui-x86-osx.so"
 #endif
-#elif defined(__arm__)
+#elif defined(_ARMEL)
 #define GUI_HELPER_DLL "/library.xbmc.gui/libXBMC_gui-arm.so"
 #elif defined(__x86_64__)
 #define GUI_HELPER_DLL "/library.xbmc.gui/libXBMC_gui-x86_64-linux.so"
