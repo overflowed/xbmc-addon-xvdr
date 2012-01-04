@@ -33,6 +33,7 @@ extern "C" {
 
 cXVDRData::cXVDRData()
  : m_aborting(false)
+ , m_timercount(0)
 {
 }
 
@@ -43,11 +44,11 @@ cXVDRData::~cXVDRData()
   Close();
 }
 
-bool cXVDRData::Open(const std::string& hostname, int port, const char* name)
+bool cXVDRData::Open(const std::string& hostname, const char* name)
 {
   m_aborting = false;
 
-  if(!cXVDRSession::Open(hostname, port, name))
+  if(!cXVDRSession::Open(hostname, name))
     return false;
 
   if(name != NULL) {
@@ -85,16 +86,16 @@ void cXVDRData::SignalConnectionLost()
 void cXVDRData::OnDisconnect()
 {
   XBMC->QueueNotification(QUEUE_ERROR, XBMC->GetLocalizedString(30044));
-  PVR->TriggerTimerUpdate();
 }
 
 void cXVDRData::OnReconnect()
 {
   XBMC->QueueNotification(QUEUE_INFO, XBMC->GetLocalizedString(30045));
 
-  EnableStatusInterface(g_bHandleMessages);
+  EnableStatusInterface(m_settings.HandleMessages());
+  ChannelFilter(m_settings.FTAChannels(), m_settings.NativeLangOnly(), m_settings.vcaids);
+  SetUpdateChannels(m_settings.UpdateChannels());
 
-  PVR->TriggerChannelUpdate();
   PVR->TriggerTimerUpdate();
   PVR->TriggerRecordingUpdate();
 }
@@ -115,7 +116,7 @@ cResponsePacket* cXVDRData::ReadResult(cRequestPacket* vrp)
     return NULL;
   }
 
-  message.event->Wait(g_iConnectTimeout * 1000);
+  message.event->Wait(m_settings.ConnectTimeout() * 1000);
 
   m_Mutex.Lock();
 
@@ -213,6 +214,33 @@ bool cXVDRData::SetUpdateChannels(uint8_t method)
   }
 
   XBMC->Log(LOG_INFO, "Channel update method set to %i", method);
+
+  uint32_t ret = vresp->extract_U32();
+  delete vresp;
+  return ret == XVDR_RET_OK ? true : false;
+}
+
+bool cXVDRData::ChannelFilter(bool fta, bool nativelangonly, std::vector<int>& caids)
+{
+  std::size_t count = caids.size();
+  cRequestPacket vrp;
+
+  if (!vrp.init(XVDR_CHANNELFILTER)) return false;
+  if (!vrp.add_U32(fta)) return false;
+  if (!vrp.add_U32(nativelangonly)) return false;
+  if (!vrp.add_U32(count)) return false;
+
+  for(int i = 0; i < count; i++)
+    if (!vrp.add_U32(caids[i])) return false;
+
+  cResponsePacket* vresp = ReadResult(&vrp);
+  if (!vresp)
+  {
+    XBMC->Log(LOG_INFO, "Channel filter method not supported by server. Consider updating the XVDR server.");
+    return false;
+  }
+
+  XBMC->Log(LOG_INFO, "Channel filter set");
 
   uint32_t ret = vresp->extract_U32();
   delete vresp;
@@ -347,6 +375,10 @@ bool cXVDRData::GetEPGForChannel(PVR_HANDLE handle, const PVR_CHANNEL &channel, 
 
 int cXVDRData::GetTimersCount()
 {
+  // return caches values on connection loss
+  if(ConnectionLost())
+    return m_timercount;
+
   cRequestPacket vrp;
   if (!vrp.init(XVDR_TIMER_GETCOUNT))
   {
@@ -358,13 +390,13 @@ int cXVDRData::GetTimersCount()
   if (!vresp)
   {
     XBMC->Log(LOG_ERROR, "%s - Can't get response packet", __FUNCTION__);
-    return -1;
+    return m_timercount;
   }
 
-  uint32_t count = vresp->extract_U32();
+  m_timercount = vresp->extract_U32();
 
   delete vresp;
-  return count;
+  return m_timercount;
 }
 
 PVR_ERROR cXVDRData::GetTimerInfo(unsigned int timernumber, PVR_TIMER &tag)
@@ -808,8 +840,9 @@ bool cXVDRData::SendPing()
 void cXVDRData::Action()
 {
   uint32_t lastPing = 0;
-
   cResponsePacket* vresp;
+
+  SetPriority(19);
 
   while (Running())
   {
@@ -863,9 +896,6 @@ void cXVDRData::Action()
         uint32_t type = vresp->extract_U32();
         char* msgstr  = vresp->extract_String();
         std::string text = msgstr;
-
-        if (g_bCharsetConv)
-          XBMC->UnknownToUTF8(text);
 
         if (type == 2)
           XBMC->QueueNotification(QUEUE_ERROR, text.c_str());

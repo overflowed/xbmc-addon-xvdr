@@ -27,6 +27,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 using namespace ADDON;
 
@@ -40,7 +41,7 @@ public:
   cXVDRData();
   virtual ~cXVDRData();
 
-  bool        Open(const std::string& hostname, int port, const char* name = NULL);
+  bool        Open(const std::string& hostname, const char* name = NULL);
   bool        Login();
   void        Abort();
 
@@ -48,6 +49,8 @@ public:
   bool        EnableStatusInterface(bool onOff);
   bool        SetUpdateChannels(uint8_t method);
   bool        GetDriveSpace(long long *total, long long *used);
+
+  bool        ChannelFilter(bool fta, bool nativelangonly, std::vector<int>& caids);
 
   int         GetChannelsCount();
   bool        GetChannelsList(PVR_HANDLE handle, bool radio = false);
@@ -96,4 +99,5 @@ private:
   SMessages       m_queue;
   std::string     m_videodir;
   bool            m_aborting;
+  uint32_t        m_timercount;
 };

@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <string>
+#include "XVDRSettings.h"
 
 extern "C" {
 #include "libTcpSocket/os-dependent_socket.h"
@@ -37,7 +38,7 @@ public:
   cXVDRSession();
   virtual ~cXVDRSession();
 
-  virtual bool      Open(const std::string& hostname, int port, const char *name = NULL);
+  virtual bool      Open(const std::string& hostname, const char *name = NULL);
   virtual bool      Login();
   virtual void      Close();
   virtual void      Abort();
@@ -53,9 +54,9 @@ public:
   const std::string& GetServerName() { return m_server; }
   const std::string& GetVersion()    { return m_version; }
 
-protected:
+  static void SleepMs(int ms);
 
-  void SleepMs(int ms);
+protected:
 
   bool TryReconnect();
   bool IsOpen() { return m_fd != INVALID_SOCKET; }
@@ -69,6 +70,7 @@ protected:
   std::string     m_hostname;
   int             m_port;
   std::string     m_name;
+  cXVDRSettings&  m_settings;
 
 private:
 
